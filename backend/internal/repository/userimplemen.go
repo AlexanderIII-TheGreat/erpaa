@@ -21,7 +21,7 @@ func NewUserImplemen(db *sql.DB) UserPatern{
 func (impl *UserImpl) FindUserPassword(ctx context.Context,username string) (*model.UserModel, error) {
 
 	// tetap pakai env
-	if err := godotenv.Load(".env"); err != nil {
+	if err := godotenv.Load("/var/www/erpaa/app/backend/.env"); err != nil {
 		return nil, err
 	}
 
@@ -46,7 +46,7 @@ func (impl *UserImpl) FindUserPassword(ctx context.Context,username string) (*mo
 
 func (rpu *UserImpl) Insert(ctx context.Context, user model.UserModel)(error){
 
-	if err := godotenv.Load(".env"); err != nil {
+	if err := godotenv.Load("/var/www/erpaa/app/backend/.env"); err != nil {
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (rpu *UserImpl) Insert(ctx context.Context, user model.UserModel)(error){
 }
 
 func (rpu *UserImpl) Update(ctx context.Context, id int,  user model.UserModel) (error){
-	if err := godotenv.Load(".env"); err != nil {
+	if err := godotenv.Load("/var/www/erpaa/app/backend/.env"); err != nil {
 		return err
 	}
 

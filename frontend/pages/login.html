@@ -313,7 +313,7 @@
 
             <div class="separator"><span>Masukan data anda</span></div>
 
-            <form action="/login/register" method="post">
+            <form action="/api/register" method="post">
                             <div class="w-full">
                 <div class="input-group">
                     <input type="text" placeholder="Masukan username" name="username" class="custom-input">
@@ -338,13 +338,13 @@
         </section>
         <section class="panel sign-in-panel">
             
-               <form action="/login/auth" method="post">
+               <form action="/api/login" method="post">
             <h1 class="text-4xl font-extrabold text-slate-800 mb-2">Selamat Datang</h1>
             <p class="text-slate-400 mb-6 text-center">Senang melihat Anda kembali. Silakan akses portal Anda.</p>
 
             <div class="w-full">
                 <div class="input-group">
-                    <input type="teks" placeholder="Username" name="username" class="custom-input">
+                    <input type="text" placeholder="Username" name="username" class="custom-input">
                     <i class="fas fa-user"></i>
                 </div>
                 <div class="input-group">

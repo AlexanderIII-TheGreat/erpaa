@@ -1,111 +1,3 @@
-// package server
-
-// import (
-// 	"erpaa-backend/internal/database"
-// 	"erpaa-backend/internal/handler"
-// 	middleware "erpaa-backend/internal/middlewares"
-// 	"erpaa-backend/internal/repository"
-// 	"net/http"
-// 	"time"
-// )
-
-// func Server() error {
-
-// 	UserPatern := repository.NewUserImplemen(database.DataCon())
-// 	UserHandler := handler.NewHandlerUser(UserPatern)
-
-// 	StokHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		http.ServeFile(w,r, "/frontend/pages/stokmanagement.html")
-// 	})
-
-// 	dashboardhandler := http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-// 		http.ServeFile(writer, req, "/frontend/pages/dashboard.html")
-// 	})
-
-// 	producthandler := http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-// 		http.ServeFile(writer, req, "/frontend/pages/product.html")
-// 	})
-
-// 	inventoryhandler := http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-// 		http.ServeFile(writer, req, "/frontend/pages/inventory.html")
-// 	})
-
-// 	saleshandler := http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-// 		http.ServeFile(writer, req, "/frontend/pages/salesforecasting.html")
-// 	})
-
-// 	shippinghandler := http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-// 		http.ServeFile(writer, req, "/frontend/pages/shipping.html")
-// 	})
-
-// 	IntegrasiHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		http.ServeFile(w,r, "/frontend/pages/Integrasi.html")
-// 	})
-
-// 	BriefHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		http.ServeFile(w,r, "/frontend/pages/DailyBrief.html")
-// 	})
-
-// 	mux := http.NewServeMux()
-
-// 	mux.Handle("/asset/", http.StripPrefix("/asset/",
-// 	http.FileServer(http.Dir("/frontend/CSS")),
-// 	))
-
-// 	mux.Handle("/dashboard/daily/", middleware.AuthMiddleware(BriefHandler))
-
-// 	mux.Handle("/inventory/stok/", middleware.AuthMiddleware(StokHandler))
-
-// 	mux.Handle("/integrasi/", middleware.AuthMiddleware(IntegrasiHandler))
-
-// 	mux.Handle("/dashboard/", middleware.AuthMiddleware(dashboardhandler))
-
-// 	mux.Handle("/product/", middleware.AuthMiddleware(producthandler))
-
-// 	mux.Handle("/shipping/", middleware.AuthMiddleware(shippinghandler))
-
-// 	mux.Handle("/inventory/", middleware.AuthMiddleware(inventoryhandler))
-
-// 	mux.HandleFunc("/aipage/", func(w http.ResponseWriter, r *http.Request)  {
-// 		http.ServeFile(w, r, "/frontend/pages/ai.html")
-// 	})
-
-// 	mux.Handle("/salesforecasting/", middleware.AuthMiddleware(saleshandler))
-
-// 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-// 		http.ServeFile(w, r, "/frontend/pages/login.html")
-// 	})
-
-// 	mux.Handle("/login/auth", middleware.Chain(
-// 		http.HandlerFunc(UserHandler.FindUser),
-// 		middleware.LoggingMiddleware,
-// 		middleware.RecoverMiddleware,
-// 	))
-
-// 	mux.Handle("/login/register", middleware.Chain(
-// 		http.HandlerFunc(UserHandler.Registrasi),
-// 		middleware.LoggingMiddleware,
-// 		middleware.RecoverMiddleware,
-// 	))
-
-// 	mux.HandleFunc("/logout/", UserHandler.Logout)
-
-// 	serve := http.Server{
-// 		Addr: ":8090",
-// 		Handler: mux,
-// 		ReadTimeout: 5 *time.Second,
-// 		WriteTimeout: 10 *time.Second,
-// 		IdleTimeout: 120 * time.Second,
-// 	}
-
-// 	err := serve.ListenAndServe()
-// 	if err != nil{
-// 		panic(err)
-// 	}
-// 	return err
-
-// }
-
 package server
 
 import (
@@ -118,36 +10,84 @@ import (
 	"time"
 )
 
+const (
+	FrontendPages = "/var/www/erpaa/app/frontend/pages"
+	FrontendAsset = "/var/www/erpaa/app/frontend/assets"
+)
+
 func Server() error {
 
+	// ===== DB & DEPENDENCY =====
 	db := database.DataCon()
 	userRepo := repository.NewUserImplemen(db)
 	userHandler := handler.NewHandlerUser(userRepo)
 
 	mux := http.NewServeMux()
 
+	// ===== STATIC FILE =====
+	mux.Handle("/assets/",
+		http.StripPrefix("/assets/",
+			http.FileServer(http.Dir(FrontendAsset)),
+		),
+	)
+
+	// ===== PUBLIC PAGE =====
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeFile(w, r, FrontendPages+"/login.html")
+	})
+
 	// ===== AUTH =====
-	mux.Handle("/api/login", middleware.Chain(
+	mux.Handle("/login/auth", middleware.Chain(
 		http.HandlerFunc(userHandler.FindUser),
 		middleware.LoggingMiddleware,
 		middleware.RecoverMiddleware,
 	))
 
-	mux.Handle("/api/register", middleware.Chain(
+	mux.Handle("/login/register", middleware.Chain(
 		http.HandlerFunc(userHandler.Registrasi),
 		middleware.LoggingMiddleware,
 		middleware.RecoverMiddleware,
 	))
 
-	mux.Handle("/api/logout", http.HandlerFunc(userHandler.Logout))
+	mux.HandleFunc("/logout/", userHandler.Logout)
 
-	// ===== PROTECTED API =====
-	mux.Handle("/api/dashboard", middleware.AuthMiddleware(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`{"message":"dashboard ok"}`))
-		}),
+	// ===== PROTECTED PAGE =====
+	mux.Handle("/dashboard/", middleware.AuthMiddleware(
+		fileHandler("dashboard.html"),
 	))
 
+	mux.Handle("/inventory/", middleware.AuthMiddleware(
+		fileHandler("inventory.html"),
+	))
+		mux.Handle("/inventory/stok/", middleware.AuthMiddleware(
+		fileHandler("stokmanagement.html"),
+	))
+
+	mux.Handle("/product/", middleware.AuthMiddleware(
+		fileHandler("product.html"),
+	))
+
+	mux.Handle("/shipping/", middleware.AuthMiddleware(
+		fileHandler("shipping.html"),
+	))
+
+	mux.Handle("/salesforecasting/", middleware.AuthMiddleware(
+		fileHandler("salesforecasting.html"),
+	))
+
+	mux.Handle("/integrasi/", middleware.AuthMiddleware(
+		fileHandler("Integrasi.html"),
+	))
+
+	mux.Handle("/dashboard/daily", middleware.AuthMiddleware(
+		fileHandler("DailyBrief.html"),
+	))
+
+	// ===== SERVER =====
 	server := &http.Server{
 		Addr:         ":8090",
 		Handler:      mux,
@@ -156,7 +96,13 @@ func Server() error {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	log.Println("✅ ERPAA Backend running on :8090")
-	log.Fatal(server.ListenAndServe())
-	return nil
+	log.Println("✅ ERPAA server running at :8090")
+	return server.ListenAndServe()
+}
+
+// ===== HELPER =====
+func fileHandler(filename string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, FrontendPages+"/"+filename)
+	}
 }

@@ -18,7 +18,7 @@ func TestDb(t *testing.T){
 	if err != nil {
 		panic(err)
 	}
-	TABLE := os.Getenv("DB_TABLE")
+	TABLE := os.Getenv("DB_USER")
 	ctx, cancel := context.WithTimeout(context.Background(), 5* time.Second)
 	defer cancel()
 
